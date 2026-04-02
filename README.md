@@ -14,8 +14,7 @@
 
 ## 🔥 Live Demo
 
-🚀 [(https://res-qai-ai-powered-emergency-response-assistant-r5dghlkr4.vercel.app)]
-
+🚀 (https://resqai-app.vercel.app/)
 ---
 
 ## 📌 Problem
