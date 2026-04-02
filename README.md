@@ -14,7 +14,7 @@
 
 ## 🔥 Live Demo
 
-🚀 https://your-live-link.vercel.app *(Update after deployment)*
+🚀 [(https://res-qai-ai-powered-emergency-response-assistant-r5dghlkr4.vercel.app)]
 
 ---
 
@@ -94,6 +94,22 @@ D --> E[Optional: Connect to Doctor]
 ---
 
 ## 📸 Screenshots
+
+### 🏠 Home Page
+![Home](screenshots/home.png)
+
+### Login Page
+![Login](screenshots/login.png)
+
+### 📖 Instructions UI
+![Instructions](screenshots/instructions.png)
+
+### Report
+![Report](screenshots/report.png)
+
+### Privacy
+![Privacy](screenshots/Privacy.png)
+
 
 > ⚠️ Add these (VERY IMPORTANT)
 
