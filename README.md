@@ -14,7 +14,7 @@
 
 ## 🔥 Live Demo
 
-🚀 (https://resqai-app.vercel.app/)
+🚀 https://resqai-app.vercel.app/
 ---
 
 ## 📌 Problem
