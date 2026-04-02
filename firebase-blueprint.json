@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "Incident": {
+      "title": "Emergency Incident",
+      "description": "A record of an emergency situation and the AI-provided guidance.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who reported the emergency." },
+        "emergencyType": { "type": "string", "description": "The type of emergency identified by AI." },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "emergencyKey": { "type": "string" },
+        "firstAidSteps": { "type": "array", "items": { "type": "string" } },
+        "dos": { "type": "array", "items": { "type": "string" } },
+        "donts": { "type": "array", "items": { "type": "string" } },
+        "nearbyServicesNeeded": { "type": "array", "items": { "type": "string" } },
+        "source": { "type": "string" },
+        "triggerAlert": { "type": "boolean" },
+        "speechText": { "type": "string" },
+        "language": { "type": "string" },
+        "injuryArea": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "width": { "type": "number" },
+            "height": { "type": "number" },
+            "label": { "type": "string" }
+          }
+        },
+        "confidence": { "type": "number" },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "reporterName": { "type": "string" },
+        "reporterContact": { "type": "string" },
+        "description": { "type": "string", "description": "User-provided description of the accident." },
+        "photo": { "type": "string", "description": "Base64 encoded photo of the accident." },
+        "locationDescription": { "type": "string", "description": "User-provided description of the location or address." },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "resolved"] }
+      },
+      "required": ["userId", "emergencyType", "severity", "emergencyKey", "triggerAlert", "speechText", "timestamp", "status"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Basic information about the user.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "bloodGroup": { "type": "string" },
+        "medicalConditions": { "type": "string" },
+        "allergies": { "type": "string" },
+        "role": { "type": "string", "enum": ["client", "admin"] },
+        "points": { "type": "integer", "description": "Total points earned through CPR assistance." },
+        "badges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "icon": { "type": "string" },
+              "dateEarned": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "emergencyContacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "phone": { "type": "string" }
+            }
+          }
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "sirenEnabled": { "type": "boolean" },
+            "voiceGuidanceEnabled": { "type": "boolean" },
+            "privacyModeEnabled": { "type": "boolean" },
+            "hasAcceptedPrivacy": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/incidents/{incidentId}": {
+      "schema": "Incident",
+      "description": "Global collection of emergency incidents."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private user profile data."
+    }
+  }
+}

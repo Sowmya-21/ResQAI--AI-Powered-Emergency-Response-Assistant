@@ -1,0 +1,9 @@
+{
+  "name": "Remix: AI Emergency Assistant",
+  "description": "An AI-powered emergency response system providing instant first-aid guidance and emergency service alerts.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

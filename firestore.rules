@@ -1,0 +1,186 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: incidents
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - UID of the user who reported the emergency
+    //   - emergencyType: string (required) - Type of emergency identified by AI
+    //   - severity: string (required, enum: low, medium, high, critical)
+    //   - emergencyKey: string (required)
+    //   - firstAidSteps: list (optional) - Array of strings
+    //   - dos: list (optional) - Array of strings
+    //   - donts: list (optional) - Array of strings
+    //   - nearbyServicesNeeded: list (optional) - Array of strings
+    //   - source: string (optional)
+    //   - triggerAlert: bool (required)
+    //   - speechText: string (required)
+    //   - language: string (optional)
+    //   - injuryArea: map (optional) - { x: number, y: number, width: number, height: number, label: string }
+    //   - confidence: number (optional)
+    //   - location: map (optional) - { lat: number, lng: number }
+    //   - reporterName: string (optional)
+    //   - reporterContact: string (optional)
+    //   - description: string (optional)
+    //   - photo: string (optional) - Base64 encoded image
+    //   - locationDescription: string (optional) - User-provided address or location description
+    //   - timestamp: timestamp (required) - Server timestamp
+    //   - status: string (required, enum: active, resolved)
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - displayName: string (optional)
+    //   - email: string (optional, format: email)
+    //   - photoURL: string (optional)
+    //   - bloodGroup: string (optional)
+    //   - medicalConditions: string (optional)
+    //   - allergies: string (optional)
+    //   - role: string (optional, enum: client, admin)
+    //   - points: number (optional)
+    //   - badges: list (optional) - Array of maps { id: string, name: string, description: string, icon: string, dateEarned: string }
+    //   - emergencyContacts: list (optional) - Array of maps { name: string, phone: string }
+    //   - settings: map (optional) - { sirenEnabled: bool, voiceGuidanceEnabled: bool, privacyModeEnabled: bool, hasAcceptedPrivacy: bool }
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "kanaparthisowmya60@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidStatus(status) {
+      return status in ['active', 'resolved'];
+    }
+
+    function isValidSeverity(severity) {
+      return severity in ['low', 'medium', 'high', 'critical'];
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidList(list, maxSize) {
+      return list is list && list.size() <= maxSize;
+    }
+
+    function isValidLocation(location) {
+      return location == null || (
+        location is map &&
+        location.keys().hasAll(['lat', 'lng']) &&
+        location.lat is number && location.lng is number &&
+        location.lat >= -90 && location.lat <= 90 &&
+        location.lng >= -180 && location.lng <= 180
+      );
+    }
+
+    function isValidInjuryArea(area) {
+      return area == null || (
+        area is map &&
+        area.keys().hasAll(['x', 'y', 'width', 'height', 'label']) &&
+        area.x is number && area.y is number &&
+        area.width is number && area.height is number &&
+        area.label is string
+      );
+    }
+
+    function isValidIncident(data) {
+      return hasRequiredFields(['userId', 'emergencyType', 'severity', 'emergencyKey', 'triggerAlert', 'speechText', 'timestamp', 'status']) &&
+             (data.userId == 'anonymous' || (isAuthenticated() && data.userId == request.auth.uid)) &&
+             data.emergencyType is string && data.emergencyType.size() <= 100 &&
+             isValidSeverity(data.severity) &&
+             data.emergencyKey is string &&
+             data.triggerAlert is bool &&
+             data.speechText is string && data.speechText.size() <= 1000 &&
+             isValidStatus(data.status) &&
+             data.timestamp is timestamp &&
+             (!('firstAidSteps' in data) || data.firstAidSteps == null || isValidList(data.firstAidSteps, 50)) &&
+             (!('dos' in data) || data.dos == null || isValidList(data.dos, 50)) &&
+             (!('donts' in data) || data.donts == null || isValidList(data.donts, 50)) &&
+             (!('nearbyServicesNeeded' in data) || data.nearbyServicesNeeded == null || isValidList(data.nearbyServicesNeeded, 50)) &&
+             (!('source' in data) || data.source == null || data.source is string) &&
+             (!('language' in data) || data.language == null || data.language is string) &&
+             (!('confidence' in data) || data.confidence == null || data.confidence is number) &&
+             (!('reporterName' in data) || data.reporterName == null || (data.reporterName is string && data.reporterName.size() <= 100)) &&
+             (!('reporterContact' in data) || data.reporterContact == null || (data.reporterContact is string && data.reporterContact.size() <= 200)) &&
+             (!('description' in data) || data.description == null || (data.description is string && data.description.size() <= 2000)) &&
+             (!('photo' in data) || data.photo == null || (data.photo is string && data.photo.size() <= 1000000)) &&
+             (!('locationDescription' in data) || data.locationDescription == null || (data.locationDescription is string && data.locationDescription.size() <= 500)) &&
+             (!('injuryArea' in data) || isValidInjuryArea(data.injuryArea)) &&
+             (!('location' in data) || isValidLocation(data.location));
+    }
+
+    function isValidUser(data) {
+      return (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('email' in data) || isValidEmail(data.email)) &&
+             (!('role' in data) || data.role in ['client', 'admin']) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1000)) &&
+             (!('bloodGroup' in data) || (data.bloodGroup is string && data.bloodGroup.size() <= 10)) &&
+             (!('medicalConditions' in data) || (data.medicalConditions is string && data.medicalConditions.size() <= 1000)) &&
+             (!('allergies' in data) || (data.allergies is string && data.allergies.size() <= 1000)) &&
+             (!('points' in data) || (data.points is number && data.points >= 0)) &&
+             (!('badges' in data) || (data.badges is list && data.badges.size() <= 50)) &&
+             (!('emergencyContacts' in data) || (data.emergencyContacts is list && data.emergencyContacts.size() <= 10)) &&
+             (!('settings' in data) || (data.settings is map && 
+               (!('sirenEnabled' in data.settings) || data.settings.sirenEnabled is bool) &&
+               (!('voiceGuidanceEnabled' in data.settings) || data.settings.voiceGuidanceEnabled is bool) &&
+               (!('privacyModeEnabled' in data.settings) || data.settings.privacyModeEnabled is bool) &&
+               (!('hasAcceptedPrivacy' in data.settings) || data.settings.hasAcceptedPrivacy is bool)
+             ));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /incidents/{incidentId} {
+      allow read: if isAuthenticated() && (resource.data.status == 'active' || isDocOwner() || isAdmin());
+      allow create: if (isAuthenticated() || request.resource.data.userId == 'anonymous') && isValidIncident(request.resource.data);
+      allow update: if isAuthenticated() && isValidIncident(request.resource.data) && (isDocOwner() || isAdmin());
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                    request.resource.data.role == 'client' &&
+                    (!('points' in request.resource.data) || request.resource.data.points == 0) &&
+                    (!('badges' in request.resource.data) || request.resource.data.badges.size() == 0);
+      allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                    request.resource.data.role == resource.data.role &&
+                    (!('points' in request.resource.data) || request.resource.data.points >= (resource.data.points || 0)) &&
+                    (!('badges' in request.resource.data) || request.resource.data.badges.size() >= (resource.data.badges.size() || 0));
+    }
+  }
+}
